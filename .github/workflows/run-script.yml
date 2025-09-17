@@ -1,17 +1,26 @@
-name: Run Auto Update Script
+name: Run token_extractor.py (hourly 09–19 AWST)
 
 on:
   schedule:
-    # UTC 기준: 01:00–11:00 → 퍼스시간 09:00–19:00
+    # UTC 01:00–11:00 == 퍼스(AWST, UTC+8) 09:00–19:00
     - cron: "0 1-11 * * *"
-  workflow_dispatch: {}  # 필요하면 수동 실행도 허용
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    concurrency:
+      group: token-extractor-hourly
+      cancel-in-progress: false
+
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -21,11 +30,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt
+          # Playwright용 브라우저(Chromium) 설치
+          python -m playwright install chromium
 
-      - name: Run AutoSortify
+      - name: Run token_extractor.py
         env:
-          # 예: API_KEY: ${{ secrets.API_KEY }}
-          TZ: "Australia/Perth"  # 로그 시간 맞춤용
+          TZ: "Australia/Perth"   # 로그 타임스탬프용 (스케줄엔 영향 없음)
+          # 예) API_KEY: ${{ secrets.API_KEY }}
         run: |
           python token_extractor.py
+
+      # (선택) 생성된 token.json을 실행 아티팩트로 보관해 확인하기
+      - name: Upload token.json artifact
+        if: success() && hashFiles('token.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: token-json
+          path: token.json
+          if-no-files-found: ignore
