@@ -1,0 +1,31 @@
+name: Run Auto Update Script
+
+on:
+  schedule:
+    # UTC 기준: 01:00–11:00 → 퍼스시간 09:00–19:00
+    - cron: "0 1-11 * * *"
+  workflow_dispatch: {}  # 필요하면 수동 실행도 허용
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run AutoSortify
+        env:
+          # 예: API_KEY: ${{ secrets.API_KEY }}
+          TZ: "Australia/Perth"  # 로그 시간 맞춤용
+        run: |
+          python token_extractor.py
