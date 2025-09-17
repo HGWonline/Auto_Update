@@ -2,19 +2,6 @@ import json
 import requests
 from playwright.sync_api import sync_playwright
 
-### 🛎️ 슬랙 알림 함수
-def send_slack_message(text):
-    webhook_url = "https://hooks.slack.com/services/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"  # 👈 슬랙 Webhook URL 입력
-    payload = {"text": text}
-    try:
-        response = requests.post(webhook_url, json=payload)
-        if response.status_code != 200:
-            print(f"❗ 슬랙 알림 실패: {response.status_code}")
-        else:
-            print("📨 슬랙 알림 전송 성공")
-    except Exception as e:
-        print(f"❗ 슬랙 알림 오류: {e}")
-
 def extract_tokens():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -62,14 +49,11 @@ def extract_tokens():
                         "X_CSRF_TOKEN": token_found["csrf"]
                     }, f)
                 print("✅ token.json 저장 완료")
-                send_slack_message("✅ token.json 저장 완료되었습니다.")
             else:
                 print("❌ 토큰 추출 실패: 요청이 감지되지 않았거나 토큰 없음")
-                send_slack_message("❌ 토큰 추출 실패: 요청이 감지되지 않았거나 토큰 없음")
 
         except Exception as e:
             print(f"❌ 예외 발생: {e}")
-            send_slack_message(f"❌ 예외 발생 중단됨:\n```\n{e}\n```")
 
 if __name__ == "__main__":
     extract_tokens()
